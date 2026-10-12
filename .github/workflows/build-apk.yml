@@ -20,7 +20,11 @@ jobs:
           distribution: temurin
           java-version: "17"
       - name: Install Android SDK components
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;25.2.9519653" "cmake;3.22.1"
+        run: |
+          sdkmanager_path="$(find "${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)"
+          test -n "$sdkmanager_path"
+          yes | "$sdkmanager_path" --licenses >/dev/null
+          "$sdkmanager_path" "platforms;android-35" "build-tools;35.0.0" "ndk;25.2.9519653" "cmake;3.22.1"
       - name: Fetch pinned whisper.cpp runtime
         run: git clone --depth 1 --branch v1.9.4 https://github.com/ggml-org/whisper.cpp.git source/third_party/whisper.cpp
       - name: Fetch and verify multilingual Whisper base model
