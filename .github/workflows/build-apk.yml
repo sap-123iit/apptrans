@@ -1,0 +1,44 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Expand VoxFlow source
+        run: unzip -q voxflow-source.zip -d source
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK components
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;25.2.9519653" "cmake;3.22.1"
+      - name: Fetch pinned whisper.cpp runtime
+        run: git clone --depth 1 --branch v1.9.4 https://github.com/ggml-org/whisper.cpp.git source/third_party/whisper.cpp
+      - name: Fetch and verify multilingual Whisper base model
+        run: |
+          mkdir -p source/app/src/main/assets/models
+          curl --location --fail --retry 3 \
+            https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin \
+            --output source/app/src/main/assets/models/ggml-base.bin
+          echo "465707469ff3a37a2b9b8d8f89f2f99de7299dac  source/app/src/main/assets/models/ggml-base.bin" | sha1sum --check --strict
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.8"
+      - name: Test and build
+        working-directory: source
+        run: gradle testDebugUnitTest assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voxflow-debug-apk
+          path: source/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
