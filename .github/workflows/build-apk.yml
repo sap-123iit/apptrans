@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Expand VoxFlow source
-        run: unzip -q voxflow-source.zip -d source
+        run: unzip -q VoxFlow-source.zip -d source
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
